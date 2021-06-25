@@ -23,10 +23,17 @@ loadSprite('pipe-bottom-right', 'nqQ79eI.png');
 
 const MOVE_SPEED = 120;
 const JUMP_FORCE = 360;
+const BIG_JUMP_FORCE = 550;
+const ENEMY_SPEED = 20;
+let CURRENT_JUMP_FORCE = JUMP_FORCE;
+let isJumping = true;
+const FALL_DEATH = 400;
 
 
 
-scene('game', () => {
+
+
+scene('game', ({score}) => {
     layers(['bg','obj','ui'], "obj");
 
     const map = [
@@ -49,7 +56,7 @@ scene('game', () => {
         width: 20,
         height: 20,
         '=' : [sprite('block'), solid()],
-        '$' : [sprite('coin')],
+        '$' : [sprite('coin', 'coin')],
         '%' : [sprite('surprise'),solid(),'coin-surprise'],
         '*' : [sprite('surprise'),solid(),'mushroom-surprise'],
         '}' : [sprite('unboxed'), solid()],
@@ -57,8 +64,8 @@ scene('game', () => {
         ')' : [sprite('pipe-bottom-right'), solid(), scale(0.5)],
         '-' : [sprite('pipe-top-left'), solid(), scale(0.5)],
         '+' : [sprite('pipe-top-right'), solid(), scale(0.5)],
-        '^' : [sprite('evilMushroom'), solid()],
-        '#' : [sprite('mushroom'), solid()],
+        '^' : [sprite('evilMushroom'), solid(), "dangerous"],
+        '#' : [sprite('mushroom'), solid(), 'mushroom', body()],
 
 
 
@@ -67,11 +74,11 @@ scene('game', () => {
     const gameLevel = addLevel(map, levelConfig);
 
     const scoreLabel = add([
-        text('test'),
+        text(score),
         pos(30,6),
         layer('ui'),
         {
-            value: 'test',
+            value: score,
         }
 
     ])
@@ -84,6 +91,8 @@ scene('game', () => {
         return{
             update(){
                 if(isBig){
+                CURRENT_JUMP_FORCE = BIG_JUMP_FORCE,
+                    
                     timer -= dt();
                     if(timer <= 0){
                         this.smallify()
@@ -94,7 +103,9 @@ scene('game', () => {
                 return isBig;
             },
             smallify(){
+
                 this.scale = vec2(1),
+                CURRENT_JUMP_FORCE = JUMP_FORCE,
                 timer = 0,
                 isBig = false
             },
@@ -114,6 +125,10 @@ scene('game', () => {
         origin('bot')
     ]);
 
+    action('mushroom', (m) => {
+        m.move(20, 0)
+    })
+
     player.on('headbump',(obj) => {
         if(obj.is('coin-surprise')){
             gameLevel.spawn('$', obj.gridPos.sub(0,1));
@@ -127,6 +142,29 @@ scene('game', () => {
         }
     })
 
+    player.collides('mushroom', (m) => {
+        destroy(m)
+        player.biggify(6);
+    });
+
+    player.collides('coin', (c) => {
+        destroy(c)
+        scoreLabel.value++;
+        scoreLabel.text = scoreLabel.value;
+    });
+
+    action('dangerous', (d) => {
+        d.move(-ENEMY_SPEED,0)
+    })
+
+    player.collides('dangerous', (d) => {
+        if(isJumping){
+            destroy(d)
+        }else{
+            go('lose', {score: scoreLabel.value})
+        }
+       
+    })
 
     keyDown('left', () => {
         player.move(-MOVE_SPEED,0)
@@ -135,14 +173,24 @@ scene('game', () => {
         player.move(MOVE_SPEED,0)
     });
 
+    player.action(() => {
+        if(player.grounded()){
+            isJumping = false;
+        }
+    })
+
     keyPress('space', () => {
         if(player.grounded()){
-            player.jump(JUMP_FORCE)
+            isJumping = true;
+            player.jump(CURRENT_JUMP_FORCE)
         }
     })
 
 
 
 });
+scene('lose', ({score}) => {
+    add([text(score, 32), origin('center'), pos(width()/2, height()/2)])
+})
 
-start('game');
+start('game', {score: 0});
