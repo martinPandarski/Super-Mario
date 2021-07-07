@@ -25,6 +25,8 @@ loadSprite('blue-brick', '3e5YRQd.png');
 loadSprite('blue-steel', 'gqVoI2b.png');
 loadSprite('blue-EvilMushroom', 'SvV4ueD.png');
 loadSprite('blue-surprise', 'RMqCc1G.png');
+loadSprite('blue-surprise-shroom', 'RMqCc1G.png');
+
 
 
 
@@ -70,11 +72,11 @@ scene('game', ({level, score}) => {
         '&                                  &',
         '&                                  &',
         '&                                  &',
-        '&     z  zzzzzz                    &',
+        '&     z  zyzzz                     &',
         '&                                  &',
-        '&                          _       &',
-        '&                        _       -+&',
-        '&        $    @   @ @  _ _       ()&',
+        '&                          _ _     &',
+        '&                        _ _ _   -+&',
+        '&               @  @ @  _ _ _ _  ()&',
         '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'  
     ]]
 
@@ -96,6 +98,7 @@ scene('game', ({level, score}) => {
         '&' : [sprite('blue-brick'), solid(), scale(0.5)],
         '@' : [sprite('blue-EvilMushroom'), solid(), scale(0.5), 'dangerous'],
         'z' : [sprite('blue-surprise'), solid(), scale(0.5), 'coin-surprise'],
+        'y' : [sprite('blue-surprise-shroom'), solid(), scale(0.5), 'blue-surprise-shroom'],
         '_' : [sprite('blue-steel'), solid(), scale(0.5)],
 
 
@@ -164,6 +167,19 @@ scene('game', ({level, score}) => {
     })
 
     player.on('headbump', (obj) => {
+        if(obj.is('blue-surprise')){
+            gameLevel.spawn('$', obj.gridPos.sub(0,1));
+            destroy(obj)
+            gameLevel.spawn('}', obj.gridPos.sub(0,0));
+        }
+        if(obj.is('blue-surprise-shroom')){
+            gameLevel.spawn('#', obj.gridPos.sub(0,1));
+            destroy(obj)
+            gameLevel.spawn('}', obj.gridPos.sub(0,0));
+        }
+    })
+
+    player.on('headbump', (obj) => {
         if(obj.is('coin-surprise')){
             gameLevel.spawn('$', obj.gridPos.sub(0,1));
             destroy(obj)
@@ -175,7 +191,6 @@ scene('game', ({level, score}) => {
             gameLevel.spawn('}', obj.gridPos.sub(0,0));
         }
     })
-
     player.collides('mushroom', (m) => {
         destroy(m)
         player.biggify(6);
